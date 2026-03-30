@@ -1,0 +1,93 @@
+"""
+Author: Ze Woon Avery
+--- create pangenome
+"""
+
+import json
+import os
+import re
+import pandas as pd
+from os.path import join, basename, dirname
+from os import getcwd
+from subprocess import check_output
+
+##--------------------------------------------------------------------------------------##
+## Functions
+##--------------------------------------------------------------------------------------##
+
+# To print process messages
+def message(x):
+  print()
+
+# To remove suffix from a string
+def rstrip(text, suffix):
+    if not text.endswith(suffix):
+        return text
+    return text[:len(text)-len(suffix)]
+
+
+##--------------------------------------------------------------------------------------##
+## Global config files:
+##--------------------------------------------------------------------------------------##
+
+configfile: 'config.yaml'
+
+## Full path to a folder where final output files will be deposited.
+OUT_DIR = config['OUT_DIR']
+
+## Create the final output directory if it doesn't already exist
+if not os.path.exists(OUT_DIR):
+            os.makedirs(OUT_DIR)
+
+## Samples and their corresponding filenames.
+FILES = json.load(open(config['SAMPLES_JSON']))
+SAMPLES = sorted(FILES.keys())
+
+## Store variables from config
+GTF = config['reference_gtf']
+CHECK_DIR = os.path.join(OUT_DIR, "check_dir")
+
+##--------------------------------------------------------------------------------------##
+## Rules
+##--------------------------------------------------------------------------------------##
+
+Rules
+include: "rules/count_transcripts.smk"
+include: "rules/check_quality.smk"
+
+localrules:
+    all,
+    check_counts,
+    check_qc,
+
+##--------------------------------------------------------------------------------------##
+#
+# _____ _             _               _               _
+#|  ___(_)_ __   __ _| |   ___  _   _| |_ _ __  _   _| |_ ___
+#| |_  | | '_ \ / _` | |  / _ \| | | | __| '_ \| | | | __/ __|
+#|  _| | | | | | (_| | | | (_) | |_| | |_| |_) | |_| | |_\__ \
+#|_|   |_|_| |_|\__,_|_|  \___/ \__,_|\__| .__/ \__,_|\__|___/
+#                                        |_|
+##--------------------------------------------------------------------------------------##
+
+## Final expected output(s)
+rule all:
+    input:
+        join(CHECK_DIR, "check_counts"),
+        # join(CHECK_DIR, "check_qc"),
+
+##--------------------------------------------------------------------------------------##
+##--------------------------------------------------------------------------------------##
+
+rule check_counts:
+    input:
+        countsSt = join(OUT_DIR, 'abundances', 'gene_counts.txt'),
+        countsStMatrix = join(OUT_DIR, 'abundances', 'gene_counts_matrix.txt')
+    output:
+        touch(join(CHECK_DIR, "check_counts"))
+
+rule check_qc:
+    input:
+        multiqc = join(OUT_DIR, 'qc', 'multiqc_report.html'),
+    output:
+        touch(join(CHECK_DIR, "check_qc"))

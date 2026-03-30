@@ -1,0 +1,9 @@
+name: cactus-minigraph
+channels:
+  - r
+  - defaults
+  - conda-forge
+  - bioconda
+dependencies:
+  - cactus=0.0.2019.03.01
+  - vg=1.70.0 

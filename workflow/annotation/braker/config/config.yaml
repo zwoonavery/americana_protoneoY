@@ -1,0 +1,27 @@
+
+########################
+## RNA-SEQ FASTQ FILES #
+########################
+
+## species ##
+#put a name here for your species that DOES NOT match an existing AUGUSTUS species name
+species: "dame" 
+
+## table of sample IDs from which to derive ID strings for fastq files ##
+fastq_sampleTable: "resources/fastq.tsv"
+# bam_sampleTable: "test/samplesheet_bam.tsv"
+
+## path to star index dir
+star_index_dir: "resources/star_index/"
+
+## Genome ##
+# path to soft-masked genome fasta
+genome: "resources/genome/DamePacBio_muller.fasta"
+
+## path to OrthoDB protein fasta ##
+orthodb: "resources/genome/protein.fa"
+
+protein_only: False # boolean (True or False); set to True for BRAKER2, False for BRAKER3
+
+## data format ##
+rnaseq_format: "fastq" # available options are bam and fastq

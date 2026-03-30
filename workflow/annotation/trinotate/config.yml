@@ -1,0 +1,29 @@
+# Path to assemblies and gtfs.
+genomes:
+  # G96:
+  #   fasta: '/home/yahmed-labshare/data/genomes/virilis_group/americana/G96/Muller/DamePacBio_muller.fasta'
+  #   gtf: '/home/yahmed-labshare/data/genomes/virilis_group/americana/G96/Muller/gffcompare/g96.combined.gtf'
+  ML.97.05:
+    fasta: '/home/yahmed-labshare/data/genomes/virilis_group/americana/ML97.5/Muller/Polished/DameNanopore_ML975_canu.pilon3.ME.fa'
+    gtf: '/home/yahmed-labshare/data/genomes/virilis_group/americana/ML97.5/Muller/Polished/gffcompare/ml.97.5.combined.gtf'
+  SB.02.06:
+    fasta: '/home/yahmed-labshare/data/genomes/virilis_group/americana/SB.02.06/Muller/Polished/DameNanopore_SB0206_canu.pilon3.ME.fa'
+    gtf: '/home/yahmed-labshare/data/genomes/virilis_group/americana/SB.02.06/Muller/Polished/gffcompare/sb.02.06.combined.gtf'
+
+# Path to a folder where final files will be written.
+OUT_DIR: 'results'
+CUSTOM: '/home/yahmed/Trinotate/dvir1.06/dvir.proteins.fasta'
+
+# Path to database files and trinotate file.
+SQLITE: '/home/yahmed-labshare/scripts/snakemake_pipelines/annotation/multiple_genomes_trinotate/example.sqlite'
+UNIPROT: '/home/yahmed-labshare/data/databases/trinotate_databases/uniprot_sprot.pep'
+PFAM: '/home/yahmed-labshare/data/databases/trinotate_databases/Pfam-A.hmm'
+
+# Path to scripts
+SIGNALP_SCRIPT: '/home/clavery/projects/scripts/multiple_genomes_trinotate/scripts/signalp-4.1/signalp'
+TMHMM_SCRIPT: '/home/clavery/projects/scripts/multiple_genomes_trinotate/scripts/tmhmm-2.0c/bin/tmhmm'
+RNAMMER: '/home/clavery/projects/scripts/multiple_genomes_trinotate/scripts/rnammer/rnammer'
+RNAMMER_SCRIPT: '/home/clavery/projects/scripts/multiple_genomes_trinotate/scripts/Trinotate-Trinotate-v4.0.2/util/rnammer_support/RnammerTranscriptome.pl'
+TRINOTATE_IMAGE: '/home/clavery/projects/scripts/multiple_genomes_trinotate/scripts/trinotate.v4.0.2.simg'
+TRINOTATE_SCRIPT: '/home/clavery/projects/scripts/multiple_genomes_trinotate/scripts/Trinotate-Trinotate-v4.0.2/Trinotate'
+TRINOTATE_EXTRACT: '/home/clavery/projects/scripts/multiple_genomes_trinotate/scripts/Trinotate-Trinotate-v4.0.2/util/extract_GO_assignments_from_Trinotate_xls.pl'

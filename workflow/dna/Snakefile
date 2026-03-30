@@ -1,0 +1,86 @@
+"""
+Author: Ze Woon Avery
+--- Snakemake workflow for population genomic
+"""
+
+import json
+import os
+from os.path import join, basename, dirname, isfile
+from os import getcwd, listdir
+from subprocess import check_output
+import subprocess
+
+##--------------------------------------------------------------------------------------##
+## Functions
+##--------------------------------------------------------------------------------------##
+
+# To print process messages
+def message(x):
+  print()
+
+# To remove suffix from a string
+def rstrip(text, suffix):
+    if not text.endswith(suffix):
+        return text
+    return text[:len(text)-len(suffix)]
+
+## define environment variables
+
+##--------------------------------------------------------------------------------------##
+## Global config files:
+##--------------------------------------------------------------------------------------##
+
+configfile: 'config.yml'
+
+# Full path to a folder where final output files will be deposited.
+OUT_DIR = config['OUT_DIR']
+
+## Define wildcards from config
+GIRAFFE_FOLDER = config['GIRAFFE_FOLDER']
+PREFIX = config['GIRAFFE_PREFIX']
+
+# DNAseq Samples and their corresponding filenames.
+# paired-end:
+FILES = json.load(open(config['PE_SAMPLES_JSON']))
+SAMPLES = sorted(FILES.keys())
+
+## Create the final output directory if it doesn't already exist
+if not os.path.exists(OUT_DIR):
+            os.makedirs(OUT_DIR)
+
+##--------------------------------------------------------------------------------------##
+##--------------------------------------------------------------------------------------##
+
+Rules
+include: "rules/align_reads.smk"
+include: "rules/call_variants.smk"
+include: "rules/delly_call_variants.smk"
+include: "rules/gatk_call_variants.smk"
+include: "rules/check_quality.smk"
+
+localrules:
+    all,
+
+##--------------------------------------------------------------------------------------##
+##--------------------------------------------------------------------------------------##
+# _____ _             _               _               _
+#|  ___(_)_ __   __ _| |   ___  _   _| |_ _ __  _   _| |_ ___
+#| |_  | | '_ \ / _` | |  / _ \| | | | __| '_ \| | | | __/ __|
+#|  _| | | | | | (_| | | | (_) | |_| | |_| |_) | |_| | |_\__ \
+#|_|   |_|_| |_|\__,_|_|  \___/ \__,_|\__| .__/ \__,_|\__|___/
+#                                        |_|
+##--------------------------------------------------------------------------------------##
+##--------------------------------------------------------------------------------------##
+
+## Final expected output(s)
+rule all:
+    input:
+        # multiqc = join(OUT_DIR, 'multiqc', 'multiqc_report.html'),
+        # novelty_cat = join(OUT_DIR, 'calling', 'vg_novelty.tsv'),
+        # vg_vcf = join(OUT_DIR, 'calling', 'vg_annotated.vcf.gz'),
+        # snpeffect_vcf = join(OUT_DIR, 'snpeffect', 'vg_annotated.snpEff.vcf.gz'),
+        # delly_vcf = join(OUT_DIR, 'calling', 'germline_delly.vcf'),
+        gatk_vcf = join(OUT_DIR, 'calling', 'gatk.vcf.gz'),
+
+##--------------------------------------------------------------------------------------##
+##--------------------------------------------------------------------------------------##

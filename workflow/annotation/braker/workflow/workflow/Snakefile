@@ -1,0 +1,45 @@
+from glob import glob
+from os.path import basename
+from os import system
+import pandas as pd
+import os.path
+from numpy import log2
+import gzip
+from datetime import datetime
+from pathlib import Path
+
+configfile: "config/config.yaml"
+
+genome_path = Path(config["genome"])
+orthodb_path = Path(config["orthodb"])
+
+if config["protein_only"] == True:
+    include: "rules/braker2_protein.smk"
+
+elif config["rnaseq_format"] == "bam":
+    sampleinfo = pd.read_table(config["bam_sampleTable"])
+    SAMPLES=list(sampleinfo.loc[:,"sampleid"])
+    BAMS=list(sampleinfo.loc[:,"bam"])
+    include: "rules/braker3_bams.smk"
+
+elif config["rnaseq_format"] == "fastq":
+    sampleinfo = pd.read_table(config["fastq_sampleTable"])
+    SAMPLES=list(sampleinfo.loc[:,"sampleid"])
+    if config["star_index_dir"] == "":
+        config["star_index_dir"] = "results/star_index/"
+    include: "rules/star.smk"
+    include: "rules/starindex.smk"
+    include: "rules/braker3_fastq.smk"
+
+elif config["protein_only"] == False and config["rnaseq_format"] not in ["bam","fastq"]:
+    raise ValueError("input rna-seq data type not among supported types: bam, fastq")
+
+else:
+    raise ValueError("incorrect or missing value in config/config.yaml")
+
+rule all:
+        input:
+            "results/braker3/braker/braker.gtf"
+        default_target: True
+
+include: "rules/brakermover.smk"

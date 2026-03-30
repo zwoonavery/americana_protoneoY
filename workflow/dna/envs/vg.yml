@@ -1,0 +1,9 @@
+name: vg
+channels:
+  - r
+  - defaults
+  - conda-forge
+  - bioconda
+dependencies:
+  - samtools=1.22.1
+  - vg=1.65.0 

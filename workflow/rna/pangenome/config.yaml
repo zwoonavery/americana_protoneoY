@@ -1,0 +1,12 @@
+## path to reference genome
+reference_fasta: "dame_g96.fasta"
+reference_gtf: "dame_g96.gff"
+reference_gbwt: "/home/yahmed-labshare/data/genomes/virilis_group/americana/pangenome/minicactus_polished/final/dame.gbwt"
+reference_gbz: "/home/yahmed-labshare/data/genomes/virilis_group/americana/pangenome/minicactus_polished/final/dame.gbz"
+  ## create reference_paths file: vg paths -L -x $reference_gbz
+
+## Path to a JSON file with samples and their corresponding FASTQ files
+SAMPLES_JSON: "samples_pe.json"
+
+## Path to a folder where final files will be written. 
+OUT_DIR: "results/"

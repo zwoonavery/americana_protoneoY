@@ -1,0 +1,11 @@
+## get the first few rows
+awk -v OFS='\t' '{print "G96#0#"$1, $2, $3, $4, $5, $6, $7, $8}' vir_GCF_030788295.1_liftoff_DameG96.gff > dame_g96_8.gff
+
+## replace space in the last column with an underscore
+awk '{$1=$2=$3=$4=$5=$6=$7=$8=""; print $0}' vir_GCF_030788295.1_liftoff_DameG96.gff | sed 's/^ *//' | tr -s ' ' '_' > dame_g96_9.gff
+
+## combine the two columns
+paste dame_g96_8.gff dame_g96_9.gff > dame_g96_combined.gff
+
+## remove a line if it is an exon but does not have a transcript id
+awk -F'\t' '!( $3=="exon" && $9 !~ /transcript_id/ )' dame_g96_combined.gff > dame_g96.gff

@@ -1,0 +1,21 @@
+# Path to PacBio assemblies and their HISAT indices.
+genomes:
+  G96:
+    fasta: '/home/yahmed-labshare/data/genomes/virilis_group/americana/G96/Muller/DamePacBio_muller.fasta'
+    gtf: '/home/yahmed-labshare/data/genomes/virilis_group/americana/G96/Muller/gffcompare/g96.combined.gtf'
+  ML.97.05:
+    fasta: '/home/yahmed-labshare/data/genomes/virilis_group/americana/ML97.5/Muller/Polished/DameNanopore_ML975_canu.pilon3.ME.fa'
+    gtf: '/home/yahmed-labshare/data/genomes/virilis_group/americana/ML97.5/Muller/Polished/gffcompare/ml.97.5.combined.gtf'
+  SB.02.06:
+    fasta: '/home/yahmed-labshare/data/genomes/virilis_group/americana/SB.02.06/Muller/Polished/DameNanopore_SB0206_canu.pilon3.ME.fa'
+    gtf: '/home/yahmed-labshare/data/genomes/virilis_group/americana/SB.02.06/Muller/Polished/gffcompare/sb.02.06.combined.gtf'
+
+# Path to a folder where final files will be written.
+OUT_DIR: 'results/'
+
+# Path to a JSON file with samples and their corresponding FASTQ files.
+SAMPLES_JSON: 'samples_pe.json'
+
+# HISAT2 run-specific parameters
+hisat2_params:
+  extra: "-p 8 --dta --rg-id {sample} --rg ID:{sample} --rg SM:{sample}"

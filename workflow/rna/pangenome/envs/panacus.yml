@@ -1,0 +1,8 @@
+name: cactus-minigraph
+channels:
+  - r
+  - defaults
+  - conda-forge
+  - bioconda
+dependencies:
+  - panacus=0.4.1
