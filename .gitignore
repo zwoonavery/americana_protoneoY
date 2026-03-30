@@ -12,6 +12,6 @@ workflow/*/results/
 workflow/*/*/results/
 
 ## ignore figures
-figures/*.png
+analysis/figures/
 
 ## ignore large files
