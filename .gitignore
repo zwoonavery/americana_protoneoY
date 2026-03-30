@@ -1,0 +1,17 @@
+## ignore snakemake folders
+*.snakemake
+
+## ignore input files
+*.json
+*.csv
+analysis/intermediate/
+analysis/input/
+
+## ignore results files
+workflow/*/results/
+workflow/*/*/results/
+
+## ignore figures
+figures/*.png
+
+## ignore large files
