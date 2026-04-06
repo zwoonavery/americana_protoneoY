@@ -8,8 +8,8 @@ analysis/intermediate/
 analysis/input/
 
 ## ignore results files
-workflow/*/results/
-workflow/*/*/results/
+results/
+resources/
 
 ## ignore figures
 analysis/figures/
