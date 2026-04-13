@@ -1,17 +1,17 @@
 # Path to pangenome resources
-GIRAFFE_FOLDER: '/home/labshare/data/genomes/virilis_group/americana/pangenome/minicactus_polished/index/'
+GIRAFFE_FOLDER: '/home/yahmed-labshare/data/genomes/virilis_group/americana/pangenome/minicactus_polished/index/'
 GIRAFFE_PREFIX: 'dame'
-REFERENCE_FASTA: '/home/labshare/data/genomes/virilis_group/americana/G96/Muller/DamePacBio_muller.fasta'
-REFERENCE_GTF: '/home/labshare/data/genomes/virilis_group/americana/G96/Muller/vir_GCF_030788295.1_liftoff_DameG96.gtf'
-FASTA_ZIP: '/home/labshare/data/genomes/virilis_group/americana/G96/Muller/DamePacBio_muller.fasta.gz'
-GTF_ZIP: '/home/labshare/data/genomes/virilis_group/americana/G96/Muller/vir_GCF_030788295.1_liftoff_DameG96.gtf.gz'
+REFERENCE_FASTA: '/home/yahmed-labshare/data/genomes/virilis_group/americana/G96/Muller/DamePacBio_muller.fasta'
+REFERENCE_GTF: '/home/yahmed-labshare/data/genomes/virilis_group/americana/G96/Muller/vir_GCF_030788295.1_liftoff_DameG96.gtf'
+FASTA_ZIP: '/home/yahmed-labshare/data/genomes/virilis_group/americana/G96/Muller/DamePacBio_muller.fasta.gz'
+GTF_ZIP: '/home/yahmed-labshare/data/genomes/virilis_group/americana/G96/Muller/vir_GCF_030788295.1_liftoff_DameG96.gtf.gz'
 
 # Path to tools
 SNPEFFECT_SCRIPT: '/home/clavery/projects/scripts/tools/snpEff/snpEff/snpEff.jar'
 SNPEFFECT_DB: 'Dame'
 
 # Path to a folder where final files will be written.
-OUT_DIR: '/home/clavery/projects/dagrp/pangenome/polished_vcf/results/'
+OUT_DIR: 'results/'
 
 # Path to a JSON file with DNAseq samples and their corresponding FASTQ files.
-PE_SAMPLES_JSON: '/home/clavery/projects/dagrp/pangenome/polished_vcf/samples_pe.json'
+PE_SAMPLES_JSON: 'samples_pe.json'

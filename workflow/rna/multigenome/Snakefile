@@ -387,7 +387,7 @@ rule featureCounts:
     shell:
         """
         mkdir -p {params.output_dir}
-        featureCounts -a {params.gtf} -p -T {threads} -g "gene_name" -F GTF -o {output.countsSt} {params.hbams} > {log} 2>&1
+        featureCounts -a {params.gtf} -p -T {threads} -g "gene_id" -F GTF -o {output.countsSt} {params.hbams} > {log} 2>&1
         cat {output.countsSt} | cut -f 1,7- | sed 1d > {output.countsStMatrix}
         """
 
