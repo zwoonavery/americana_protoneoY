@@ -84,6 +84,7 @@ rule all:
         # gatk_vcf = join(OUT_DIR, 'calling', 'gatk.vcf.gz'),
         plink_vcf = join(OUT_DIR, 'plink', 'vg_annotated_pruned.vcf'),
         vcftools_log = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools.log'),
+        fst = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools.weir.fst'),
 
 ##--------------------------------------------------------------------------------------##
 ##--------------------------------------------------------------------------------------##

@@ -1,0 +1,167 @@
+"""
+Author: Ze Woon Avery
+--- Snakemake workflow for population genomic
+"""
+
+import json
+import os
+from os.path import join, basename, dirname, isfile
+from os import getcwd, listdir
+from subprocess import check_output
+import subprocess
+
+##--------------------------------------------------------------------------------------##
+## Functions
+##--------------------------------------------------------------------------------------##
+
+# To print process messages
+def message(x):
+  print()
+
+# To remove suffix from a string
+def rstrip(text, suffix):
+    if not text.endswith(suffix):
+        return text
+    return text[:len(text)-len(suffix)]
+
+## define environment variables
+
+##--------------------------------------------------------------------------------------##
+## Global config files:
+##--------------------------------------------------------------------------------------##
+
+configfile: 'config.yml'
+
+# Full path to a folder where final output files will be deposited.
+OUT_DIR = config['OUT_DIR']
+
+## Define wildcards from config
+GIRAFFE_FOLDER = config['GIRAFFE_FOLDER']
+PREFIX = config['GIRAFFE_PREFIX']
+DB_FASTA = config['DB_FASTA']
+
+# DNAseq Samples and their corresponding filenames.
+# paired-end:
+FILES = json.load(open(config['PE_SAMPLES_JSON']))
+SAMPLES = sorted(FILES.keys())
+
+## Create the final output directory if it doesn't already exist
+if not os.path.exists(OUT_DIR):
+            os.makedirs(OUT_DIR)
+
+##--------------------------------------------------------------------------------------##
+##--------------------------------------------------------------------------------------##
+
+localrules:
+    all,
+
+##--------------------------------------------------------------------------------------##
+##--------------------------------------------------------------------------------------##
+# _____ _             _               _               _
+#|  ___(_)_ __   __ _| |   ___  _   _| |_ _ __  _   _| |_ ___
+#| |_  | | '_ \ / _` | |  / _ \| | | | __| '_ \| | | | __/ __|
+#|  _| | | | | | (_| | | | (_) | |_| | |_| |_) | |_| | |_\__ \
+#|_|   |_|_| |_|\__,_|_|  \___/ \__,_|\__| .__/ \__,_|\__|___/
+#                                        |_|
+##--------------------------------------------------------------------------------------##
+##--------------------------------------------------------------------------------------##
+
+## Final expected output(s)
+rule all:
+    input:
+        coverage_total = expand(join(OUT_DIR, 'coverage', '{sample}.coverage_total.txt'), sample = SAMPLES),
+        coverage_bp = expand(join(OUT_DIR, 'coverage', '{sample}.coverage_bp.txt'), sample = SAMPLES),
+
+##--------------------------------------------------------------------------------------##
+##--------------------------------------------------------------------------------------##
+
+rule cutadapt_trim:
+    input:
+        lambda wildcards: FILES[wildcards.sample]['R1'],
+        lambda wildcards: FILES[wildcards.sample]['R2']
+    output:
+        fastq1 = temp(join(OUT_DIR, 'trimmed_reads', '{sample}.R1.fastq.gz')),
+        fastq2 = temp(join(OUT_DIR, 'trimmed_reads', '{sample}.R2.fastq.gz')),
+        qc = join(OUT_DIR, 'cutadapt', '{sample}.qc.txt')
+    log:
+        join(OUT_DIR, 'logs', 'cutadapt', '{sample}.log')
+    benchmark:
+        join(OUT_DIR, 'benchmarks', 'cutadapt', '{sample}.benchmark.tsv')
+    params:
+        # https://cutadapt.readthedocs.io/en/stable/guide.html#adapter-types
+        adapters="-a AGATCGGAAGAGCACACGTCTGAACTCCAGTCA -a CTGTCTCTTATACACATCT -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT -A CTGTCTCTTATACACATCT",
+        # https://cutadapt.readthedocs.io/en/stable/guide.html#
+        extra="--minimum-length 50 -q 20"
+    threads:
+        4
+    resources:
+        mem_mb=8000
+    message:
+        """--- Trimming adaptors for sample {wildcards.sample}..."""
+    wrapper:
+        "v3.10.2/bio/cutadapt/pe"
+
+##--------------------------------------------------------------------------------------##
+##--------------------------------------------------------------------------------------##
+
+rule bwa_index:
+    input:
+        fasta = DB_FASTA
+    output:
+        join(OUT_DIR, 'bwa', 'reference.bwt'),
+    log:
+        join(OUT_DIR, 'logs', 'reference.log')
+    benchmark:
+        join(OUT_DIR, 'benchmarks', 'reference.benchmark.tsv')
+    threads: 
+        4
+    wrapper:
+        "v5.8.2/bio/bwa/index"
+
+rule bwa_mem:
+    input:
+        r1 = join(OUT_DIR, 'trimmed_reads', '{sample}.R1.fastq.gz'), 
+        r2 = join(OUT_DIR, 'trimmed_reads', '{sample}.R2.fastq.gz'),     
+        index = join(OUT_DIR, 'bwa', 'reference.bwt'),
+    output:
+        bam = temp(join(OUT_DIR, 'bwa', '{sample}.bwa.bam')),
+    params:
+        index_prefix = join(OUT_DIR, 'bwa', 'reference'),
+    log:
+        bwa = join(OUT_DIR, 'logs', 'bwa', '{sample}.bwa.log')
+    benchmark:
+        join(OUT_DIR, 'benchmarks', 'bwa', '{sample}.benchmark.tsv')
+    threads:
+        8
+    resources:
+        mem_mb=32000
+    message:
+        """--- Mapping PE sample "{wildcards.sample}" with BWA MEM..."""
+    conda:
+        'envs/mapping.yml'
+    shell:
+        """
+        bwa mem -t {threads} -v 1 -R \'@RG\\tID:i{wildcards.sample}\\tSM:{wildcards.sample}\' \
+        {params.index_prefix} {input.r1} {input.r2} | samtools sort -@ 8 -o {output.bam} - > {log.bwa} 2>&1
+        """
+
+##--------------------------------------------------------------------------------------##
+##--------------------------------------------------------------------------------------##
+
+rule genome_coverage:
+    input:
+        bam = join(OUT_DIR, 'bwa', '{sample}.bwa.bam'),
+    output:
+        coverage_total = join(OUT_DIR, 'coverage', '{sample}.coverage_total.txt'),
+        coverage_bp = join(OUT_DIR, 'coverage', '{sample}.coverage_bp.txt'),
+    params:
+        bwa_dir = join(OUT_DIR, 'bwa')
+    message:
+        """--- Counting coverage for "{wildcards.sample}" with bedtools..."""
+    conda:
+        'envs/mapping.yml'
+    shell:
+        """
+        bedtools genomecov -ibam {input.bam} | sed --expression '1i chromosome\tcoverage_depth\tbp_with_coverage_depth\tgenome_size\tdepth_fraction' > {output.coverage_total}
+        bedtools genomecov -bga -ibam {input.bam} | sed --expression '1i chromosome\tbp_start\tbp_end\tcoverage_depth' > {output.coverage_bp}
+        """

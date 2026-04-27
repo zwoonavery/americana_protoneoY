@@ -1,0 +1,16 @@
+# Path to pangenome resources
+GIRAFFE_FOLDER: '/home/yahmed-labshare/data/genomes/virilis_group/americana/pangenome/minicactus_polished/index/'
+GIRAFFE_PREFIX: 'dame'
+REFERENCE_FASTA: '/home/yahmed-labshare/data/genomes/virilis_group/americana/G96/Muller/DamePacBio_muller.fasta'
+REFERENCE_GTF: '/home/yahmed-labshare/data/genomes/virilis_group/americana/G96/Muller/vir_GCF_030788295.1_liftoff_DameG96.gtf'
+FASTA_ZIP: '/home/yahmed-labshare/data/genomes/virilis_group/americana/G96/Muller/DamePacBio_muller.fasta.gz'
+GTF_ZIP: '/home/yahmed-labshare/data/genomes/virilis_group/americana/G96/Muller/vir_GCF_030788295.1_liftoff_DameG96.gtf.gz'
+
+# Path to database
+DB_FASTA: 'Dame_TElib.DINEsatmod.fa'
+
+# Path to a folder where final files will be written.
+OUT_DIR: 'results/'
+
+# Path to a JSON file with DNAseq samples and their corresponding FASTQ files.
+PE_SAMPLES_JSON: 'samples_pe.json'

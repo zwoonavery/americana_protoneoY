@@ -42,3 +42,28 @@ rule vcftools_stats:
         vcftools --vcf {input.plink_vcf} --window-pi {params.window} --out {params.output_prefix}
         vcftools --vcf {input.plink_vcf} --fst-window-size {params.window} --out {params.output_prefix}
         """
+
+rule vcftools_fst:
+    input:
+        plink_vcf = join(OUT_DIR, 'plink', 'vg_annotated_pruned.vcf'),
+        fastq = expand(join(OUT_DIR, 'trimmed_reads', '{sample}.R1.fastq.gz'), sample = SAMPLES),
+    output:
+        join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools.weir.fst'),
+    params:
+        fastq_dir = join(OUT_DIR, 'trimmed_reads')
+        fst_dir = temp(directory(join(OUT_DIR, 'plink_stats', 'fst'))),
+        samples_list = temp(join(OUT_DIR, 'plink_stats', 'fst', 'samples.txt')),
+        population_list = temp(join(OUT_DIR, 'plink_stats', 'fst', 'populations.txt')),
+        output_prefix = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools'),
+    message:
+        """--- Calculate Fst for pruned VCF."""
+    conda:
+        '../envs/plink.yml'
+    shell:
+        """
+        mkdir {params.fst_dir}
+        ls {params.fastq_dir} | sed '{{sub(".*/", "", $1)}} 1' | sed 's/\..*//g' | uniq > {params.samples_list}
+        awk '{{prefix=$1; sub(/_.*$/, "", prefix); print $0, prefix}}' {params.samples_list} > {params.population_list}
+        awk '{{print > $2 ".pop.txt"}}' {params.population_list}
+        vcftools --vcf {input.plink_vcf} $(for f in {params.fst_dir}*.pop.txt; do printf -- "--weir-fst-pop %s " "$f"; done) --out {params.output_prefix}
+        """
