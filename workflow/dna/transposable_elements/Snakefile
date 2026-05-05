@@ -69,8 +69,8 @@ localrules:
 ## Final expected output(s)
 rule all:
     input:
-        coverage_total = expand(join(OUT_DIR, 'coverage', '{sample}.coverage_total.txt'), sample = SAMPLES),
-        coverage_bp = expand(join(OUT_DIR, 'coverage', '{sample}.coverage_bp.txt'), sample = SAMPLES),
+        coverage_total = join(OUT_DIR, 'coverage_total.txt'),
+        coverage_bp =join(OUT_DIR, 'coverage_bp.txt'),
 
 ##--------------------------------------------------------------------------------------##
 ##--------------------------------------------------------------------------------------##
@@ -148,20 +148,68 @@ rule bwa_mem:
 ##--------------------------------------------------------------------------------------##
 ##--------------------------------------------------------------------------------------##
 
-rule genome_coverage:
+rule sample_chromosome:
     input:
         bam = join(OUT_DIR, 'bwa', '{sample}.bwa.bam'),
     output:
-        coverage_total = join(OUT_DIR, 'coverage', '{sample}.coverage_total.txt'),
-        coverage_bp = join(OUT_DIR, 'coverage', '{sample}.coverage_bp.txt'),
+        coverage_total = temp(join(OUT_DIR, 'coverage', '{sample}.coverage_total.txt')),
     params:
-        bwa_dir = join(OUT_DIR, 'bwa')
+        raw_total = temp(join(OUT_DIR, 'coverage', '{sample}.raw_total.txt')),
+        coverage_filt = temp(join(OUT_DIR, 'coverage', '{sample}.coverage_filt.txt')),
     message:
-        """--- Counting coverage for "{wildcards.sample}" with bedtools..."""
+        """--- Counting coverage for "{wildcards.sample}" chromosome with bedtools..."""
     conda:
         'envs/mapping.yml'
     shell:
         """
-        bedtools genomecov -ibam {input.bam} | sed --expression '1i chromosome\tcoverage_depth\tbp_with_coverage_depth\tgenome_size\tdepth_fraction' > {output.coverage_total}
-        bedtools genomecov -bga -ibam {input.bam} | sed --expression '1i chromosome\tbp_start\tbp_end\tcoverage_depth' > {output.coverage_bp}
+        bedtools genomecov -ibam {input.bam} > {params.raw_total}
+        awk 'BEGIN {{ FS=OFS="\t" }} {{print $0, "{wildcards.sample}"}}' {params.raw_total} > {params.coverage_filt}
+        sed --expression '1i chromosome\tcoverage_depth\tbp_with_coverage_depth\tgenome_size\tdepth_fraction\tsample' {params.coverage_filt} > {output.coverage_total}
+        """
+
+rule sample_bp:
+    input:
+        bam = join(OUT_DIR, 'bwa', '{sample}.bwa.bam'),
+    output:
+        coverage_bp = temp(join(OUT_DIR, 'coverage', '{sample}.coverage_bp.txt')),
+    params:
+        raw_total = temp(join(OUT_DIR, 'coverage', '{sample}.raw_total.txt')),
+        coverage_title = temp(join(OUT_DIR, 'coverage', '{sample}.coverage_title.txt')),
+    message:
+        """--- Counting coverage for "{wildcards.sample}" chromosome with bedtools..."""
+    conda:
+        'envs/mapping.yml'
+    shell:
+        """
+        bedtools genomecov -bga -ibam {input.bam} | sed '1d' | awk 'BEGIN {{ FS=OFS="\t" }} {{print $0, "{wildcards.sample}"}}' > {output.coverage_bp}
+        """
+
+rule total_chromosome:
+    input:
+        coverage_total = expand(join(OUT_DIR, 'coverage', '{sample}.coverage_total.txt'), sample = SAMPLES),
+    output:
+        coverage_total = join(OUT_DIR, 'coverage_total.txt'),
+    params:
+        coverage_combined = temp(join(OUT_DIR, 'coverage_total_combined.txt')),
+    message:
+        """--- Concatenating coverage by chromosome..."""
+    shell:
+        """
+        cat {input.coverage_total} >> {params.coverage_combined}
+        sed --expression '1i chromosome\tcoverage_depth\tbp_with_coverage_depth\tgenome_size\tdepth_fraction\tsample' {params.coverage_combined} > {output.coverage_total}
+        """
+
+rule total_bp:
+    input:
+        coverage_bp = expand(join(OUT_DIR, 'coverage', '{sample}.coverage_bp.txt'), sample = SAMPLES),
+    output:
+        coverage_bp = join(OUT_DIR, 'coverage_bp.txt'),
+    params:
+        coverage_combined = temp(join(OUT_DIR, 'coverage_bp_combined.txt')),
+    message:
+        """--- Concatenating coverage by base pair..."""
+    shell:
+        """
+        cat {input.coverage_bp} >> {params.coverage_combined}
+        sed --expression '1i chromosome\tbp_start\tbp_end\tcoverage_depth\tsample' {params.coverage_combined} > {output.coverage_bp}
         """

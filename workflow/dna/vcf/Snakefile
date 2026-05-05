@@ -18,12 +18,6 @@ import subprocess
 def message(x):
   print()
 
-# To remove suffix from a string
-def rstrip(text, suffix):
-    if not text.endswith(suffix):
-        return text
-    return text[:len(text)-len(suffix)]
-
 ## define environment variables
 
 ##--------------------------------------------------------------------------------------##
@@ -76,15 +70,18 @@ localrules:
 ## Final expected output(s)
 rule all:
     input:
-        # multiqc = join(OUT_DIR, 'multiqc', 'multiqc_report.html'),
+        multiqc = join(OUT_DIR, 'multiqc', 'multiqc_report.html'),
         # novelty_cat = join(OUT_DIR, 'calling', 'vg_novelty.tsv'),
         # vg_vcf = join(OUT_DIR, 'calling', 'vg_annotated.vcf.gz'),
         # snpeffect_vcf = join(OUT_DIR, 'snpeffect', 'vg_annotated.snpEff.vcf.gz'),
         # delly_vcf = join(OUT_DIR, 'calling', 'germline_delly.vcf'),
         # gatk_vcf = join(OUT_DIR, 'calling', 'gatk.vcf.gz'),
-        plink_vcf = join(OUT_DIR, 'plink', 'vg_annotated_pruned.vcf'),
-        vcftools_log = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools.log'),
-        fst = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools.weir.fst'),
+        # plink_vcf = join(OUT_DIR, 'plink', 'vg_annotated_pruned.vcf'),
+        # plink_het = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools.het'),
+        # plink_hwe = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools.hwe'),
+        # plink_sites_pi = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools.sites.pi'),
+        # plink_window_pi = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools.windowed.pi'),
+        # plink_fst = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools.weir.fst'),
 
 ##--------------------------------------------------------------------------------------##
 ##--------------------------------------------------------------------------------------##
