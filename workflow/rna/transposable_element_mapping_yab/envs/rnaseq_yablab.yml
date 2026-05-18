@@ -1,0 +1,27 @@
+name: rnaseq_yablab
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+  - nodefaults
+
+dependencies:
+  # Core runtime
+  - python=3.12
+  - pip
+
+  # QC
+  - fastqc        # needs Java runtime
+  - multiqc
+
+  # Alignment & counting
+  - hisat2
+  - stringtie
+  - subread       # featureCounts
+
+  # SAM/BCF utilities (pulls in htslib)
+  - samtools
+  - bcftools
+
+  # FastQC requires a JRE
+  - openjdk

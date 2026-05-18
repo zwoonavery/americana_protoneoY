@@ -1,0 +1,29 @@
+name: atac_yablab
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+  - nodefaults
+
+dependencies:
+  # Core runtime
+  - python=3.10
+  - pip
+
+  # QC & helpers
+  - fastqc          # requires Java
+  - multiqc
+  - qualimap        # Java-based QC
+  - picard          # Java toolkit (MarkDuplicates, etc.)
+  - openjdk         # for FastQC/Qualimap/Picard
+
+  # Alignment / peak calling / utilities
+  - bowtie2
+  - samtools
+  - bedtools
+  - macs3
+  - ucsc-bedgraphtobigwig
+
+  # Optional CLI helpers often used in pipelines
+  - jq
+  - yq

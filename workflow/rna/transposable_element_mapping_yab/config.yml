@@ -1,0 +1,19 @@
+# Path to PacBio assemblies and their HISAT indices.
+genomes:
+  G96:
+    fasta: '/home/yahmed-labshare/data/genomes/virilis_group/americana/G96/Muller/DamePacBio_muller.fasta'
+    gtf: '/home/yahmed-labshare/data/genomes/virilis_group/americana/G96/Muller/gffcompare/g96.combined.gtf'
+    te_fasta: 'Dame_TElib.DINEsatmod.fa'
+
+ase_aggregation:
+  level: gene_id          # gene_id | transcript_id | gene_name
+  feature_type: exon      # exon | transcript | gene
+  aggregation: mean       # mean | sum
+  min_total_count: 0
+
+
+# Path to a folder where final files will be written.
+OUT_DIR: 'results'
+
+# Path to a JSON file with samples and their corresponding FASTQ files.
+SAMPLES_JSON: 'samples_pe.json'

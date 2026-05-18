@@ -81,6 +81,7 @@ rule all:
         # plink_hwe = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools.hwe'),
         # plink_sites_pi = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools.sites.pi'),
         # plink_window_pi = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools.windowed.pi'),
+        # pi_population = join(OUT_DIR, 'plink_stats', 'vg_annotated_population_windowed.txt'),
         # plink_fst = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools.weir.fst'),
 
 ##--------------------------------------------------------------------------------------##

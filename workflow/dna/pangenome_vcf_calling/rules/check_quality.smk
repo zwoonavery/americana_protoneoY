@@ -106,15 +106,14 @@ rule check_gatk:
 
 rule multiQC:
     input:
-        fastqc1 = expand(join(OUT_DIR, 'qc', 'fastqc' '{sample}.R1_fastqc.html'), sample = SAMPLES),
-        fastqc2 = expand(join(OUT_DIR, 'qc', 'fastqc', '{sample}.R2_fastqc.html'), sample = SAMPLES),
-        qc = expand(join(OUT_DIR, 'qc', '{sample}', '{sample}.qc.txt'), sample = SAMPLES),
         bamqc = expand(join(OUT_DIR, 'qc', '{sample}', 'bamqc', 'qualimapReport.html'), sample = SAMPLES),
         # evalGrp = expand(join(OUT_DIR, 'qc', 'gatk', '{sample}.evalGrp'), sample = SAMPLES)
     output:
         multiqc = join(OUT_DIR, 'multiqc', 'multiqc_report.html')
     params:
         fastqc_zip = expand(join(OUT_DIR, 'qc', 'fastqc' '*fastqc.zip'), sample = SAMPLES),
+        bamqc_dir = join(OUT_DIR, 'qc', '*', 'bamqc'),
+        gatk_dir = join(OUT_DIR, 'qc', 'gatk', '*.evalGrp'),
         multiqc_summary = join(OUT_DIR, 'multiqc', 'summary_files.txt'),
         multiqc_folder = join(OUT_DIR, 'multiqc')
     log:
@@ -127,8 +126,6 @@ rule multiQC:
         '../envs/vcf.yml'
     shell:
         """        
-        ls -1 {params.fastqc_zip} >> {params.multiqc_summary}
-        ls -1 {input.qc} >> {params.multiqc_summary}
-        ls -1 {input.bamqc} | grep ":" | sed "s/://g" >> {params.multiqc_summary}
+        ls -1 {params.bamqc_dir} | grep ":" | sed "s/://g" >> {params.multiqc_summary}
         multiqc -f -o {params.multiqc_folder} -d -dd 3 -l {params.multiqc_summary} > {log} 2>&1
         """

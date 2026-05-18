@@ -61,7 +61,7 @@ if not os.path.exists(OUT_DIR):
 ## Final expected output(s)
 rule all:
     input:
-        expand(join(OUT_DIR, 'MultiQC', '{genome}','multiqc_report.html'), genome = config['genomes']),
+        expand(join(OUT_DIR, 'MultiQC', '{genome}', 'multiqc_report.html'), genome = config['genomes']),
         # expand(join(OUT_DIR, 'VCF', 'BWA_GATK', '{genome}', 'all_sites', 'allsites.vcf.gz'), genome = config['genomes'])
         # expand(join(OUT_DIR, 'Delly', '{genome}', 'germline.bcf'), genome = config['genomes'])
 
@@ -405,6 +405,8 @@ rule qualimap:
         bam = join(SCRATCH, 'BWA', '{genome}', '{sample}', '{sample}.csorted.bwa.bam')
     output:
         bamqc = join(OUT_DIR, 'BWA', '{genome}', '{sample}', 'bamqc', 'qualimapReport.html')
+    params:
+        out_dir = join(OUT_DIR, 'BWA', '{genome}', '{sample}', 'bamqc')
     log:
         bamqc = join(OUT_DIR, 'Logs', 'Qualimap', '{genome}', '{sample}.bamqc.log')
     benchmark:
@@ -418,13 +420,9 @@ rule qualimap:
     conda:
         'envs/DaGRP.yml'
     shell:
-        'qualimap bamqc'
-            ' -bam {input.bam}'
-            ' -c'
-            ' -outdir ' + join(OUT_DIR, 'BWA', '{wildcards.genome}', '{wildcards.sample}', 'bamqc') +
-            ' --java-mem-size=32G'
-            ' -nt 8'
-            ' 2> {log.bamqc}'
+        """
+        qualimap bamqc -bam {input.bam} -c -outdir {params.out_dir} --java-mem-size=32G -nt 8 2> {log.bamqc}
+        """
 
 ##--------------------------------------------------------------------------------------##
 ##--------------------------------------------------------------------------------------##
@@ -638,7 +636,7 @@ rule GATK_GenotypeGVCFs:
 ##--------------------------------------------------------------------------------------##
 ##--------------------------------------------------------------------------------------##
 
-## Rule to collate fastQC and Bowtie2 outputs with multiQC
+## Rule to collate outputs with multiQC
 rule multiQC:
     input:
         # expand(join(OUT_DIR, 'VCF', 'BWA_GATK', '{genome}', 'all_sites', '{sample}', '{sample}.evalGrp'), sample = SAMPLES, genome = config['genomes']),
@@ -648,6 +646,13 @@ rule multiQC:
         # expand(join(OUT_DIR, 'Transcripts', '{genome}', '{sample}', '{sample}.CDS.fasta'), sample = SAMPLES, genome = config['genomes'])
     output:
         file = join(OUT_DIR, 'MultiQC', '{genome}', 'multiqc_report.html')
+    params:
+        summary_file = join(OUT_DIR, 'MultiQC', '{genome}_summary_files.txt'),
+        vcf_eval = join(OUT_DIR, 'VCF', 'BWA_GATK', '{genome}', 'all_sites', '*', '*.evalGrp'),
+        bwa_bamqc = join(OUT_DIR, 'BWA', '{genome}', '*', 'bamqc'),
+        trimmed_reads = join(OUT_DIR, 'trimmed_reads', '*.qc.txt'),
+        raw_reads = join(OUT_DIR, 'fastQC', '*fastqc.zip'),
+        multiqc_dir = join(OUT_DIR, 'MultiQC', '{genome}')
     log:
         join(OUT_DIR, 'Logs', 'MultiQC', '{genome}' 'multiQC.log')
     benchmark:
@@ -657,11 +662,9 @@ rule multiQC:
     conda:
         'envs/DaGRP.yml'
     shell:
-        # 'ls -1 ' + join(OUT_DIR) + '/VCF/BWA_GATK/{wildcards.genome}/all_sites/*/*.evalGrp >> ' + join(OUT_DIR, 'MultiQC', '{wildcards.genome}', 'summary_files.txt') + 
-        ' ls -1 ' + join(OUT_DIR) + '/BWA/{wildcards.genome}/*/bamqc | grep ":" | sed "s/://g" >> ' + join(OUT_DIR, 'MultiQC', 'summary_files.txt') +
-        ' && ls -1 ' + join(OUT_DIR) + '/trimmed_reads/*.qc.txt >> ' + join(OUT_DIR, 'MultiQC', 'summary_files.txt') +
-        ' && ls -1 ' + join(OUT_DIR) + '/fastQC/*fastqc.zip >> ' + join(OUT_DIR, 'MultiQC', 'summary_files.txt') + 
-        ' && multiqc'
-                ' -f'
-                ' -o ' + join(OUT_DIR, 'MultiQC', '{wildcards.genome}') + ' -d -dd 3 -l ' + join(OUT_DIR, 'MultiQC', '{wildcards.genome}', 'summary_files.txt') +
-                ' > {log} 2>&1'
+        """
+        ls -1 {params.bwa_bamqc} | grep ":" | sed "s/://g" >> {params.summary_file}
+        ls -1 {params.trimmed_reads} >> {params.summary_file}
+        ls -1 {params.raw_reads} >> {params.summary_file}
+        multiqc -f -o {params.multiqc_dir} -d -dd 3 -l {params.summary_file} > {log} 2>&1
+        """

@@ -1,0 +1,17 @@
+name: repeatmasker
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+  - nodefaults
+
+dependencies:
+  # Core (RepeatMasker + engines/tools)
+  - repeatmasker
+  - rmblast           # RMBlast search engine
+  - trf               # Tandem Repeats Finder
+  - hmmer             # for Dfam/nhmmer workflows
+
+  # Runtime helpers (optional but handy)
+  - perl              # pulled in anyway; listing explicitly for clarity
+  - wget
