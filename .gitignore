@@ -5,13 +5,13 @@
 *.json
 *.csv
 analysis/intermediate/
-analysis/input/
+analysis/input
 
 ## ignore results files
-results/
-resources/
+workflow/*/results/
+workflow/*/*/results/
 
 ## ignore figures
-analysis/figures/
+analysis/figures
 
 ## ignore large files

@@ -97,10 +97,11 @@ rule vcftools_pi_populations:
         fastq_dir = join(OUT_DIR, 'trimmed_reads'),
         samples_list = temp(join(OUT_DIR, 'plink_stats', 'pi', 'samples.txt')),
         population_list = temp(join(OUT_DIR, 'plink_stats', 'pi', 'populations.txt')),
+        pi_dir = temp(directory(join(OUT_DIR, 'plink_stats', 'pi'))),
         pi_populations = temp(join(OUT_DIR, 'plink_stats', 'pi', '*.pop.txt')),
         output_prefix = join(OUT_DIR, 'plink_stats', 'vg_annotated_vcftools'),
-        pi_window = 10000,
-        pi_files = join(OUT_DIR, 'plink_stats', 'pi', '*.pop.txt.pi.txt')
+        pi_window = 20000,
+        pi_files = join(OUT_DIR, 'plink_stats', 'pi', '*.pop.txt.pi.txt'),
         plink_combined = temp(join(OUT_DIR, 'plink_stats', 'pi', 'combined.txt')),
     message:
         """--- Calculate nucleotide diversity by window for pruned VCF."""
@@ -108,14 +109,16 @@ rule vcftools_pi_populations:
         '../envs/plink.yml'
     shell:
         """
-        ls {params.fastq_dir} | awk '{{sub(".*/", "", $1)}} 1' | sed 's/\..*//g' | uniq > {params.samples_list}
-        awk '{{prefix=$1; sub(/_.*$/, "", prefix); print $0, prefix}}' {params.samples_list} > {params.population_list}
-        awk '{{print > "{params.fst_dir}/" $2 ".pop.txt"}}' {params.population_list}
+        ## mkdir -p {params.pi_dir}
+        ## ls {params.fastq_dir} | awk '{{sub(".*/", "", $1)}} 1' | sed 's/\..*//g' | uniq > {params.samples_list}
+        ## awk '{{prefix=$1; sub(/_.*$/, "", prefix); print $0, prefix}}' {params.samples_list} > {params.population_list}
+        ## awk '{{print > "{params.pi_dir}/" $2 ".pop.txt"}}' {params.population_list}
         for i in {params.pi_populations}; do
-            vcftools --vcf {input.plink_vcf} --keep $i --window-pi {params.pi_window} --out $i
-            sed '1d' $i.windowed.pi | awk 'BEGIN {{ FS=OFS="\t" }} {{print $0, "${{i}}"}}' > $i.pi.txt
+            vcftools --vcf {input.plink_vcf} --keep $i --window-pi {params.pi_window} --out {params.pi_dir}/$i
+            sed '1d' {params.pi_dir}/$i.windowed.pi > $i.clean
+            awk 'BEGIN {{ FS=OFS="\t" }} {{print $0, FILENAME}}' $i.clean > {params.pi_dir}/$i.pi.txt
         done
-        cat {pi_files} >> {params.plink_combined}
+        cat {params.pi_files} > {params.plink_combined}
         sed --expression '1i chrom\tbin_start\tbin_end\tn_variants\tn_monomorphic\tpi\tpop' {params.plink_combined} > {output.pi_population}
         """
 
@@ -131,8 +134,9 @@ rule vcftools_fst:
         population_list = temp(join(OUT_DIR, 'plink_stats', 'fst', 'populations.txt')),
         fst_dir = temp(directory(join(OUT_DIR, 'plink_stats', 'fst'))),
         fst_populations = temp(join(OUT_DIR, 'plink_stats', 'fst', '*.pop.txt')),
-        fst_window = 10000,
+        fst_window = 20000,
         fst_step = 1,
+        fst_files = join(OUT_DIR, 'plink_stats', 'fst', '*.fst.clean.txt'),
         plink_combined = temp(join(OUT_DIR, 'plink_stats', 'fst', 'combined.txt'))
     message:
         """--- Calculate Fst for pruned VCF."""
@@ -140,16 +144,18 @@ rule vcftools_fst:
         '../envs/plink.yml'
     shell:
         """
-        ls {params.fastq_dir} | awk '{{sub(".*/", "", $1)}} 1' | sed 's/\..*//g' | uniq > {params.samples_list}
-        awk '{{prefix=$1; sub(/_.*$/, "", prefix); print $0, prefix}}' {params.samples_list} > {params.population_list}
-        awk '{{print > "{params.fst_dir}/" $2 ".pop.txt"}}' {params.population_list}
+        ## mkdir -p {params.fst_dir}
+        ## ls {params.fastq_dir} | awk '{{sub(".*/", "", $1)}} 1' | sed 's/\..*//g' | uniq > {params.samples_list}
+        ## awk '{{prefix=$1; sub(/_.*$/, "", prefix); print $0, prefix}}' {params.samples_list} > {params.population_list}
+        ## awk '{{print > "{params.fst_dir}/" $2 ".pop.txt"}}' {params.population_list}
         populations=({params.fst_populations})
         for ((i = 0; i < ${{#populations[@]}}; i++)); do
             for ((j = i + 1; j < ${{#populations[@]}}; j++)); do
-                vcftools --vcf {input.plink_vcf} --weir-fst-pop ${{populations[i]}} --weir-fst-pop ${{populations[j]}} --fst-window-size {params.fst_window} --fst-window-step {params.fst_step} --out ${{i}}_${{j}}
-                sed '1d' ${{i}}_${{j}}.windowed.weir.fst | awk 'BEGIN {{ FS=OFS="\t" }} {{print $0, "${{populations[i]}}", ${{populations[j]}}}}' > ${{i}}_${{j}}.fst.txt
+                vcftools --vcf {input.plink_vcf} --weir-fst-pop ${{populations[i]}} --weir-fst-pop ${{populations[j]}} --fst-window-size {params.fst_window} --fst-window-step {params.fst_step} --out {params.fst_dir}/${{i}}_${{j}}
+                sed '1d' {params.fst_dir}/${{i}}_${{j}}.windowed.weir.fst > {params.fst_dir}/${{i}}_${{j}}.fst.txt
+                awk 'BEGIN {{ FS=OFS="\t" }} {{print $0, FILENAME}}' {params.fst_dir}/${{i}}_${{j}}.fst.txt > {params.fst_dir}/${{i}}_${{j}}.fst.clean.txt
             done
         done
-        cat *.fst.txt >> {params.plink_combined}
-        sed --expression '1i chrom\tbin_start\tbin_end\tn_variants\tweighted_fst\tmean_fst\tpop1\tpop2' {params.plink_combined} > {output.plink_fst}
+        cat {params.fst_files} > {params.plink_combined}
+        sed --expression '1i chrom\tbin_start\tbin_end\tn_variants\tweighted_fst\tmean_fst\tfile' {params.plink_combined} > {output.plink_fst}
         """
