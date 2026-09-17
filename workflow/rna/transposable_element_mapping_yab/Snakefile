@@ -68,8 +68,9 @@ ASE_LEVEL = config["ase_aggregation"]["level"]
 ## Final expected output(s)
 rule all:
     input:
-        expand(join(OUT_DIR, "ASE_feature", "{sample}_{genome}.snp_by_" + ASE_LEVEL + ".tsv", ), genome=config['genomes'], sample=SAMPLES),
-        join(OUT_DIR, 'MultiQC', 'multiqc_report.html'),
+        # expand(join(OUT_DIR, "ASE_feature", "{sample}_{genome}.snp_by_" + ASE_LEVEL + ".tsv", ), genome=config['genomes'], sample=SAMPLES),
+        expand(join(OUT_DIR, 'abundances_RM', '{genome}', 'stringtie_RM_gene_counts_matrix.txt'), genome=config['genomes']),
+        # join(OUT_DIR, 'MultiQC', 'multiqc_report.html'),
 
 ##--------------------------------------------------------------------------------------##
 ##--------------------------------------------------------------------------------------##
@@ -197,7 +198,8 @@ rule hisat2_index:
 
 rule hisat2_align:
     input:
-        reads = [join(OUT_DIR, 'trimmed_reads', '{sample}.1.fq.gz'), join(OUT_DIR, 'trimmed_reads', '{sample}.2.fq.gz')],
+        read1 = join(OUT_DIR, 'trimmed_reads', '{sample}.1.fq.gz'), 
+        read2 = join(OUT_DIR, 'trimmed_reads', '{sample}.2.fq.gz'),
         idx = join(OUT_DIR, 'hs2_index', 'index_{genome}')
     output:
         bam = temp(join(OUT_DIR, 'HISAT-2', '{genome}', '{sample}_{genome}.hisat2.bam'))
@@ -207,9 +209,14 @@ rule hisat2_align:
         join(OUT_DIR, 'Benchmarks', 'hisat2', 'hisat2_{sample}_{genome}.benchmark.tsv')
     params:
         extra="-p 8 --no-unal --dta --rg-id {sample} --rg ID:{sample} --rg SM:{sample}",
+        prefix = join(OUT_DIR, 'hs2_index', 'index_{genome}/{genome}'),
     threads: 8
-    wrapper:
-        "v3.12.1/bio/hisat2/align"
+    conda:
+        "envs/rnaseq_yablab.yml"
+    shell:
+        """
+        hisat2 --threads {threads} -x {params.prefix} {params.extra} -1 {input.read1} -2 {input.read2} | samtools view -Sbh -o {output.bam} - > {log} 2>&1
+        """
 
 
 ##--------------------------------------------------------------------------------------##
@@ -350,7 +357,7 @@ rule repeatmasker:
         mem_mb=16000,
         repeatmasker_db=1       # <-- mutex for the library build
     message:
-        """--- Masking repeates for {wildcards.genome} genome """
+        """--- Masking repeats for {wildcards.genome} genome """
     conda:
         'envs/repeatmasker.yml'
     shell:
@@ -403,26 +410,31 @@ rule hisat2_RM_index:
         exon = join(OUT_DIR, 'hs2_index', '{genome}', 'exon.txt'),
         ss = join(OUT_DIR, 'hs2_index', '{genome}', 'ss.txt'),
     output:
-        directory(join(OUT_DIR, 'RepeatMasker', 'hs2_index', 'index_{genome}'))
+        directory(join(OUT_DIR, 'RepeatMasker', 'index_{genome}'))
     params:
-        prefix = join(OUT_DIR, 'RepeatMasker', 'hs2_index', 'index_{genome}/{genome}'),
+        prefix = join(OUT_DIR, 'RepeatMasker', 'index_{genome}/{genome}'),
         extra = lambda wc, input: f"--exon {input.exon} --ss {input.ss}"
     log:
         join(OUT_DIR, 'Logs', 'hisat2_index', '{genome}_RM.log')
     benchmark:
         join(OUT_DIR, 'Benchmarks', 'hisat2_index', '{genome}_RM.benchmark.tsv')
-    threads: 
-        4
-    wrapper:
-        "v3.12.1/bio/hisat2/index"
+    threads: 8
+    conda:
+        "envs/rnaseq_yablab.yml"
+    shell:
+        """
+        mkdir -p {output.directory}
+        hisat2-build --threads {threads} {params.extra} {input.fasta} {params.prefix}
+        """
 
 ##--------------------------------------------------------------------------------------##
 ##--------------------------------------------------------------------------------------##
 
 rule hisat2_RM_align:
     input:
-        reads = [join(OUT_DIR, 'trimmed_reads', '{sample}.1.fq.gz'), join(OUT_DIR, 'trimmed_reads', '{sample}.2.fq.gz')],
-        idx = join(OUT_DIR, 'RepeatMasker', 'hs2_index', 'index_{genome}')
+        read1 = join(OUT_DIR, 'trimmed_reads', '{sample}.1.fq.gz'),
+        read2 = join(OUT_DIR, 'trimmed_reads', '{sample}.2.fq.gz'),
+        idx = join(OUT_DIR, 'RepeatMasker', 'index_{genome}')
     output:
         bam = temp(join(OUT_DIR, 'HISAT-2', '{genome}', '{sample}_{genome}_RM.hisat2.bam'))
     log:
@@ -431,9 +443,14 @@ rule hisat2_RM_align:
         join(OUT_DIR, 'Benchmarks', 'hisat2', 'hisat2_{sample}_{genome}_RM.benchmark.tsv')
     params:
         extra="-p 8 --no-unal --dta --rg-id {sample} --rg ID:{sample} --rg SM:{sample}",
+        prefix = join(OUT_DIR, 'RepeatMasker', 'index_{genome}/{genome}'),
     threads: 8
-    wrapper:
-        "v3.12.1/bio/hisat2/align"
+    conda:
+        "envs/rnaseq_yablab.yml"
+    shell:
+        """
+        hisat2 --threads {threads} -x {params.prefix} {params.extra} -1 {input.read1} -2 {input.read2} | samtools view -Sbh -o {output.bam} - > {log} 2>&1
+        """
 
 ##--------------------------------------------------------------------------------------##
 ##--------------------------------------------------------------------------------------##
@@ -479,7 +496,7 @@ rule featureCounts:
         countsSt = join(OUT_DIR, 'abundances', '{genome}', 'stringtie_gene_counts.txt'),
         countsStMatrix = join(OUT_DIR, 'abundances', '{genome}', 'stringtie_gene_counts_matrix.txt')
     params:
-        hbam_dir = join(OUT_DIR, 'HISAT-2', '{wildcards.genome}', '*.csorted.hisat2.bam'),
+        hbam_dir = join(OUT_DIR, 'HISAT-2', '{genome}', '*.csorted.hisat2.bam'),
     log:
         join(OUT_DIR, 'Logs', 'abundances', '{genome}_fC.log')
     benchmark:
@@ -509,7 +526,7 @@ rule featureCounts_RM:
         countsSt = join(OUT_DIR, 'abundances_RM', '{genome}', 'stringtie_RM_gene_counts.txt'),
         countsStMatrix = join(OUT_DIR, 'abundances_RM', '{genome}', 'stringtie_RM_gene_counts_matrix.txt')
     params:
-        bam_dir = join(OUT_DIR, 'HISAT-2', '{wildcards.genome}', '*.csorted.RM.hisat2.bam')
+        bam_dir = join(OUT_DIR, 'HISAT-2', '{genome}', '*.csorted.RM.hisat2.bam')
     log:
         join(OUT_DIR, 'Logs', 'abundances_RM', '{genome}_RM_fC.log')
     benchmark:
@@ -775,9 +792,7 @@ rule aggregate_ase_by_feature:
             "{sample}_{genome}.ase_by_{ASE_LEVEL}.tsv",
         ),
     params:
-        prefix = lambda wc, output: output.snp_by_feature.replace(
-            f".snp_by_{ASE_LEVEL}.tsv", ""
-        ),
+        prefix = join(OUT_DIR,"ASE_feature", "{sample}_{genome}"),
         level = lambda wc: config["ase_aggregation"]["level"],
         feature_type = lambda wc: config["ase_aggregation"]["feature_type"],
         agg = lambda wc: config["ase_aggregation"]["aggregation"],
@@ -791,7 +806,7 @@ rule aggregate_ase_by_feature:
     shell:
         """
         mkdir -p $(dirname {output.snp_by_feature})
-        aggregate_ase_by_feature.py --gtf {input.gtf}--ase {input.ase} --level {params.level} --feature-type {params.feature_type} \
+        python aggregate_ase_by_feature.py --gtf {input.gtf} --ase {input.ase} --level {params.level} --feature-type {params.feature_type} \
             --agg {params.agg} --min-total-count {params.min_total_count} -o {params.prefix}
         """
 

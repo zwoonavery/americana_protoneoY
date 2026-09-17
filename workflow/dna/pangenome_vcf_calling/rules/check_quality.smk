@@ -81,6 +81,69 @@ rule vg_novelty_concatenate:
         sed -i '1i name\tlength.bp\tunaligned.bp\tknown.nodes\tknown.bp\tnovel.nodes\tnovel.bp\tsample' {output.novelty_cat}
         """
 
+rule vg_full_pangenome:
+    input:
+        dna = config['REFERENCE_FASTA'],
+        vg_vcf = join(OUT_DIR, 'calling', 'vg_annotated.vcf.gz'),
+    output:
+        full_gfa = temp(join(OUT_DIR, 'qc', 'pangenome', 'vg_full.gfa'))
+    params:
+        vg_pangenome = temp(join(OUT_DIR, 'qc', 'pangenome', 'vg_full.vg')),
+        vg_xg = temp(join(OUT_DIR, 'qc', 'pangenome', 'vg_full.xg')),
+        vg_gbwt = temp(join(OUT_DIR, 'qc', 'pangenome', 'vg_full.gbwt')),
+    threads: 16
+    message:
+        """--- Construct pangenome including all the samples using Vg. """
+    conda:
+        '../envs/vg.yml'
+    shell:
+        """
+        tabix {input.vg_vcf}
+        vg construct -t {threads} -r {input.dna} -v {input.vg_vcf} > {params.vg_pangenome}
+        vg index -t {threads} -x {params.vg_xg} -L {params.vg_pangenome} 
+        vg convert -f {params.vg_xg} > {output.full_gfa}
+        """
+
+rule panacus_openness:
+    input:
+        full_gfa = temp(join(OUT_DIR, 'qc', 'pangenome', 'vg_full.gfa')),
+    output:
+        panacus_info_html = join(OUT_DIR, 'qc', 'panacus', 'panacus_info.html'),
+        panacus_info_tsv = join(OUT_DIR, 'qc', 'panacus', 'panacus_info.tsv'),
+        panacus_hist_html = join(OUT_DIR, 'qc', 'panacus', 'panacus_hist.html'),
+        panacus_hist_tsv = join(OUT_DIR, 'qc', 'panacus', 'panacus_hist.tsv'),
+        panacus_growth_html = join(OUT_DIR, 'qc', 'panacus', 'panacus_growth.html'),
+        panacus_growth_tsv = join(OUT_DIR, 'qc', 'panacus', 'panacus_growth.tsv'),
+    threads: 16
+    message:
+        """--- Calculate pangenome openness with Panacus. """
+    conda:
+        '../envs/pangenome_qc.yml'
+    shell:
+        """
+        panacus info --threads {threads} --output-format html {input.full_gfa} > {output.panacus_info_html}
+        panacus info --threads {threads} --output-format table {input.full_gfa} > {output.panacus_info_tsv}
+        panacus hist --threads {threads} --count node --output-format html {input.full_gfa} > {output.panacus_hist_html}
+        panacus hist --threads {threads} --count node --output-format table {input.full_gfa} | sed '4,5d' > {output.panacus_hist_tsv}
+        panacus growth --threads {threads} --coverage 1,1,1 --quorum 0,0.1,0.95 --hist --output-format html {output.panacus_hist_tsv} > {output.panacus_info_html}
+        panacus growth --threads {threads} --coverage 1,1,1 --quorum 0,0.1,0.95 --hist --output-format table {output.panacus_hist_tsv} > {output.panacus_info_tsv}
+        """
+
+rule odgi_openness:
+    input:
+        full_gfa = temp(join(OUT_DIR, 'qc', 'pangenome', 'vg_full.gfa')),
+    output:
+        odgi_openness = join(OUT_DIR, 'qc', 'panacus', 'panacus_info.html'),
+    threads: 16
+    message:
+        """--- Calculate pangenome openness with Odgi. """
+    conda:
+        '../envs/pangenome_qc.yml'
+    shell:
+        """
+        odgi heaps -i{full_gfa} -S -n200 -t{threads} > {output.odgi_openness}
+        """
+
 rule check_gatk:
     input:
         gatk_vcf = join(OUT_DIR, 'calling', 'gatk', '{sample}_gatk.vcf'),

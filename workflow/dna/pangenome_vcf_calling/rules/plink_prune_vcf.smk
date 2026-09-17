@@ -2,10 +2,12 @@ rule plink_ld:
     input:
         vg_vcf = join(OUT_DIR, 'calling', 'vg_annotated.vcf.gz'),
     output:
-        plink_vcf = join(OUT_DIR, 'plink', 'vg_annotated_pruned.vcf')
+        plink_ld = join(OUT_DIR, 'plink', 'vg_annotated_pruned.ld.gz')
+        plink_vcf = join(OUT_DIR, 'plink', 'vg_annotated_pruned.vcf'),
     params:
         output_dir = directory(join(OUT_DIR, 'plink', 'ld')),
         output_prefix = join(OUT_DIR, 'plink', 'ld', 'vg_annotated_pruned'),
+        plink_ld = = join(OUT_DIR, 'plink', 'ld', 'vg_annotated_pruned.ld.gz'),
         ld_prune = join(OUT_DIR, 'plink', 'ld', 'vg_annotated_pruned.prune.in'),
         plink_vcf = join(OUT_DIR, 'plink', 'ld', 'vg_annotated_pruned.vcf')
     message:
@@ -15,6 +17,8 @@ rule plink_ld:
     shell:
         """
         mkdir -p {params.output_dir}
+        plink --vcf {input.vg_vcf} --r2 inter-chr gz yes-really --out {params.output_prefix} --double-id --allow-extra-chr
+        mv {params.plink_ld} {output.plink_ld}
         plink --vcf {input.vg_vcf} --indep-pairwise 1000 1 0.2 --out {params.output_prefix} --double-id --allow-extra-chr
         plink --vcf {input.vg_vcf} --extract {params.ld_prune} --make-bed --out {params.output_prefix} --double-id --allow-extra-chr
         plink --bfile {params.output_prefix} --recode vcf --out {params.output_prefix} --double-id --allow-extra-chr
@@ -135,7 +139,7 @@ rule vcftools_fst:
         fst_dir = temp(directory(join(OUT_DIR, 'plink_stats', 'fst'))),
         fst_populations = temp(join(OUT_DIR, 'plink_stats', 'fst', '*.pop.txt')),
         fst_window = 20000,
-        fst_step = 1,
+        fst_step = 20000,
         fst_files = join(OUT_DIR, 'plink_stats', 'fst', '*.fst.clean.txt'),
         plink_combined = temp(join(OUT_DIR, 'plink_stats', 'fst', 'combined.txt'))
     message:
@@ -144,18 +148,20 @@ rule vcftools_fst:
         '../envs/plink.yml'
     shell:
         """
-        ## mkdir -p {params.fst_dir}
-        ## ls {params.fastq_dir} | awk '{{sub(".*/", "", $1)}} 1' | sed 's/\..*//g' | uniq > {params.samples_list}
-        ## awk '{{prefix=$1; sub(/_.*$/, "", prefix); print $0, prefix}}' {params.samples_list} > {params.population_list}
-        ## awk '{{print > "{params.fst_dir}/" $2 ".pop.txt"}}' {params.population_list}
+        mkdir -p {params.fst_dir}
+        ls {params.fastq_dir} | awk '{{sub(".*/", "", $1)}} 1' | sed 's/\..*//g' | uniq > {params.samples_list}
+        awk '{{prefix=$1; sub(/_.*$/, "", prefix); print $0, prefix}}' {params.samples_list} > {params.population_list}
+        awk '{{print > "{params.fst_dir}/" $2 ".pop.txt"}}' {params.population_list}
         populations=({params.fst_populations})
         for ((i = 0; i < ${{#populations[@]}}; i++)); do
             for ((j = i + 1; j < ${{#populations[@]}}; j++)); do
                 vcftools --vcf {input.plink_vcf} --weir-fst-pop ${{populations[i]}} --weir-fst-pop ${{populations[j]}} --fst-window-size {params.fst_window} --fst-window-step {params.fst_step} --out {params.fst_dir}/${{i}}_${{j}}
                 sed '1d' {params.fst_dir}/${{i}}_${{j}}.windowed.weir.fst > {params.fst_dir}/${{i}}_${{j}}.fst.txt
                 awk 'BEGIN {{ FS=OFS="\t" }} {{print $0, FILENAME}}' {params.fst_dir}/${{i}}_${{j}}.fst.txt > {params.fst_dir}/${{i}}_${{j}}.fst.clean.txt
+                rm {params.fst_dir}/${{i}}_${{j}}.windowed.weir.fst {params.fst_dir}/${{i}}_${{j}}.fst.txt
             done
         done
         cat {params.fst_files} > {params.plink_combined}
         sed --expression '1i chrom\tbin_start\tbin_end\tn_variants\tweighted_fst\tmean_fst\tfile' {params.plink_combined} > {output.plink_fst}
+        rm -rf {params.fst_dir}
         """
