@@ -15,6 +15,6 @@ workflow/*/*/results/
 analysis/figures
 
 ## ignore large files
-.tsv
-.html
-.bam
+*.tsv
+*.html
+*.bam

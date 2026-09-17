@@ -20,7 +20,7 @@ Help()
 {
    # Display Help
    echo
-   echo "Usage: Identify inversions from unpaired alignments in a given region."
+   echo "Usage: Identify inversions from unpaired read mapping."
    echo
    echo "Syntax: inversion_unpaired_mapping.sh [h|b|i or f|o|e|k|h]"
    echo
@@ -32,7 +32,7 @@ Help()
    echo "-f PATH              Path to file listing inversion beakpoints, one per line [default: no location]"
    echo "-o PATH              Folder name for output [default: ./output/]"
    echo "-e STRING            Extension trailing the BAM files [default: .bam]"
-   echo "-k TRUE/FALSE        Keep filtered BAM files [default: FALSE]"
+   echo "-k TRUE/FALSE        Keep filtered BAM files [default: TRUE]"
    echo
    echo "Help Message:"
    echo "-h                   Print this help message."
@@ -45,7 +45,7 @@ inversion=""
 inversion_file=""
 output="output"
 extension=".bam"
-keep="FALSE"
+keep="TRUE"
 
 ## load arguments
 while getopts ":h:f:i:o:e:b:?:" option; do
@@ -94,7 +94,7 @@ fi
 ############################################################
 
 ## silence error messages
-exec 2> /dev/null
+# exec 2> /dev/null
 
 ## create output folder
 mkdir -p $output/bams
@@ -106,12 +106,12 @@ echo "sample\tcount" > $output/split_mapping_sample_count.tsv
 ## remove bams in specified
 if [ $keep == "FALSE" ]; then
    ## identify read pairs where one read maps to a given location and the other maps elsewhere
-   if ["$inversion" == "" && "$inversion_file" == ""]; then # if no inversion location is given, run for the entire file
+   if [[ "$inversion" == "" && "$inversion_file" == "" ]]; then # if no inversion location is given, run for the entire file
       for i in $folder/*.bam; do # iterate over files in folder
          sample=$(basename $i $extension) # get basename for individual file
-         echo "Extracting split reads from $i...\n"
+         echo "Extracting split reads from $i..."
          samtools view -h -F 14 $i | awk '$0 ~ /^@/ || $7 != "*"' | samtools view -b - > $output/bams/$sample.bam # filter for requirement and keep sam header
-         samtools view -c $output/bams/$sample > $output/count.txt # count the number of reads in bam
+         samtools view -c $output/bams/$sample.bam > $output/count.txt # count the number of reads in bam
          awk -v sample="$sample" 'BEGIN { FS=OFS="\t" } {print $0, sample}' $output/count.txt > $output/temp.txt # create temporary text file with sample name and read count
          cat $output/temp.txt >> $output/split_mapping_sample_count.tsv # add sample information to summary file
          rm $output/count.txt $output/temp.txt $output/bams/$sample.bam # remove intermediate files
@@ -137,19 +137,19 @@ if [ $keep == "FALSE" ]; then
          sample=$(basename $i $extension)
          echo "Extracting split reads from $i..."
          samtools view -h -F 14 $i $inversion | awk '$0 ~ /^@/ || $7 != "*"' | samtools view -b - > $output/$sample
-         samtools view -c $output/bams/$sample > $output/count.txt
+         samtools view -c $output/bams/$sample.bam > $output/count.txt
          awk -v sample="$sample" 'BEGIN { FS=OFS="\t" } {print $0, sample}' $output/count.txt > $output/temp.txt
          cat $output/temp.txt >> $output/split_mapping_sample_count.tsv
          rm $output/count.txt $output/temp.txt $output/bams/$sample.bam
       done
    fi
 elif [ $keep == "TRUE" ]; then # do not remove BAMs
-   if ["$inversion" == "" && "$inversion_file" == ""]; then
+   if [[ "$inversion" == "" && "$inversion_file" == "" ]]; then
       for i in $folder/*.bam; do
          sample=$(basename $i $extension)
          echo "Extracting split reads from $i..."
          samtools view -h -F 14 $i | awk '$0 ~ /^@/ || $7 != "*"' | samtools view -b - > $output/bams/$sample.bam 
-         samtools view -c $output/bams/$sample > $output/count.txt
+         samtools view -c $output/bams/$sample.bam > $output/count.txt
          awk -v sample="$sample" 'BEGIN { FS=OFS="\t" } {print $0, sample}' $output/count.txt > $output/temp.txt
          cat $output/temp.txt >> $output/split_mapping_sample_count.tsv
          rm $output/count.txt $output/temp.txt
@@ -174,7 +174,7 @@ elif [ $keep == "TRUE" ]; then # do not remove BAMs
          sample=$(basename $i $extension)
          echo "Extracting split reads from $i...\n"
          samtools view -h -F 14 $i $inversion | awk '$0 ~ /^@/ || $7 != "*"' | samtools view -b - > $output/$sample
-         samtools view -c $output/bams/$sample > $output/count.txt
+         samtools view -c $output/bams/$sample.bam > $output/count.txt
          awk -v sample="$sample" 'BEGIN { FS=OFS="\t" } {print $0, sample}' $output/count.txt > $output/temp.txt
          cat $output/temp.txt >> $output/split_mapping_sample_count.tsv
          rm $output/count.txt $output/temp.txt
